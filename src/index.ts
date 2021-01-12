@@ -32,6 +32,8 @@ function install(
     requestConfig().then(init)
   }
 
+  const initTriggerTime = (triggerTime: BuriedPointConfig['triggerTime']) => {}
+
   function init(config: BuriedPointConfig) {
     const createContext = () => {
       return {
@@ -100,6 +102,57 @@ function install(
       }
     }
 
+    const initTriggerTime = (
+      vm: ComponentPublicInstance,
+      context: BuriedPointContext,
+      triggerTime: PageBuriedPointConfig['triggerTime']
+    ) => {
+      if (!triggerTime) return
+      context.timers = []
+      triggerTime.forEach((item) => {
+        context.timers.push(
+          setTimeout(() => {
+            dispatchReport(compositionData(vm, item.payload))
+          }, item.time)
+        )
+      })
+    }
+
+    const initTriggerElements = (
+      vm: ComponentPublicInstance,
+      context: BuriedPointContext,
+      triggerElements: PageBuriedPointConfig['triggerElements']
+    ) => {
+    }
+
+    const initTriggerState = (
+      vm: ComponentPublicInstance,
+      context: BuriedPointContext,
+      triggerState: PageBuriedPointConfig['triggerState']
+    ) => {}
+
+    const createInitTriggerInvoker = (
+      vm: ComponentPublicInstance,
+      context: BuriedPointContext,
+      pageConfig: PageBuriedPointConfig
+    ) => {
+      return (triggerType: keyof PageBuriedPointConfig) => {
+        switch (triggerType) {
+          case 'triggerElements':
+            initTriggerElements(vm, context, pageConfig[triggerType])
+            break
+          case 'triggerTime':
+            initTriggerTime(vm, context, pageConfig[triggerType])
+            break
+          case 'triggerState':
+            initTriggerState(vm, context, pageConfig[triggerType])
+            break
+          default:
+            break
+        }
+      }
+    }
+
     app.mixin({
       beforeRouteLeave(this: ComponentPublicInstance, to, from) {
         const context = vmCtx(this)
@@ -127,6 +180,10 @@ function install(
           ) {
             dispatchReport(compositionData(vm, hook.payload))
           }
+          const initTrigger = createInitTriggerInvoker(vm, context, _config)
+          initTrigger('triggerElements')
+          initTrigger('triggerState')
+          initTrigger('triggerTime')
         })
       }
     })
