@@ -123,6 +123,24 @@ function install(
       context: BuriedPointContext,
       triggerElements: PageBuriedPointConfig['triggerElements']
     ) => {
+      if (!triggerElements) return
+      const $el = vm.$el as Element
+      if (!$el) return
+      const selectorFn = (
+        selector: string,
+        once: boolean | undefined,
+        findAll: boolean
+      ) => {
+        let els
+        if (findAll) {
+          els = Array.from($el.querySelectorAll(selector))
+        } else {
+          els = [$el.querySelector(selector)]
+        }
+      }
+      triggerElements.forEach((item) => {
+        const els = selectorFn(item.selector, !!item.once, item.findAll)
+      })
     }
 
     const initTriggerState = (
@@ -185,6 +203,15 @@ function install(
           initTrigger('triggerState')
           initTrigger('triggerTime')
         })
+      },
+      beforeUnmount(this: ComponentPublicInstance) {
+        if (this.$isRouterRootComp) {
+          const timers = ctx(this, 'timers')
+          if (timers) {
+            timers.forEach((i) => clearTimeout)
+          }
+        }
+        // if(this.$buriedPointContext)
       }
     })
   }
